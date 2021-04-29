@@ -1,0 +1,32 @@
+resources:
+  - name: git1
+    icon: github
+    type: git
+    source:
+      uri: https://github.com/shivanisarthi/mavenassignment
+      branches: '.*'
+      ignore_branches: '(master)'
+
+
+jobs:
+
+  # This test job will fetch the source code from GitHub, and execute the test task.
+  - name: compile
+    plan:
+      - get: git1
+        trigger: true # Trigger this job whenever Concourse detects a new Resource version (i.e. a new Git commit)
+      - task: mvn-compile
+        file: git1/group2/compile.yml
+
+  # This build job will fetch the source code,
+  # then execute a 'build' task which is defined separately in the repository.
+  - name: package
+    plan:
+      - get: git1 # Concourse is stateless and needs to be given an external input to this Job.
+        passed:
+          - compile # The 'unit' job must have passed for this job to execute
+        trigger: true
+      - task: mvn-package
+        file: git1/group2/package.yml
+      # Take the image built in the previous task, and push it to our Docker registry Resource
+      
